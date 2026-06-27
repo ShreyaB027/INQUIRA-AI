@@ -210,33 +210,6 @@ The frontend will call `http://localhost:8000` by default.
 
 ---
 
-## Deployment
-
-### Backend → Render
-
-1. Push `backend/` to a Git repo.
-2. Create a new **Web Service** on [render.com](https://render.com).
-3. Set **Build Command**: `pip install -r requirements.txt`
-4. Set **Start Command**: `uvicorn app:app --host 0.0.0.0 --port $PORT`
-5. Add environment variables: `MISTRAL_API_KEY`, `TAVILY_API_KEY`
-6. Copy your Render URL (e.g. `https://inquira-api.onrender.com`).
-
-### Frontend → Vercel
-
-1. Push `frontend/` to a Git repo.
-2. Import on [vercel.com](https://vercel.com) as a **Static Site**.
-3. Add an environment variable or edit `app.js`:
-   ```js
-   // top of app.js
-   const API_BASE_URL = "https://inquira-api.onrender.com";
-   ```
-   Or inject it at build time:
-   ```html
-   <!-- in index.html, before app.js -->
-   <script>window.ENV_API_BASE_URL = "https://inquira-api.onrender.com";</script>
-   ```
-4. Deploy.
-
 ---
 
 ## Features
