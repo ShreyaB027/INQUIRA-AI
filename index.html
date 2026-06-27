@@ -1,0 +1,1093 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Inquira AI – Research Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+/* ═══════════════════════════════
+   TOKENS
+═══════════════════════════════ */
+:root {
+  --bg:          #0b0f1a;
+  --sidebar-bg:  #0e1525;
+  --panel:       #111827;
+  --card:        #141d2e;
+  --border:      rgba(255,255,255,0.07);
+  --border-mid:  rgba(255,255,255,0.12);
+  --blue:        #4f8ef7;
+  --blue-dim:    #1e3a6e;
+  --purple:      #a855f7;
+  --teal:        #2dd4bf;
+  --amber:       #f59e0b;
+  --green:       #22c55e;
+  --red:         #ef4444;
+  --text:        #e2e8f0;
+  --text-mid:    #94a3b8;
+  --text-dim:    #475569;
+  --radius:      10px;
+  --radius-sm:   6px;
+  --sidebar-w:   240px;
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);display:flex;font-size:13px}
+
+/* ═══════════════════════════════
+   SCROLLBARS
+═══════════════════════════════ */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border-mid);border-radius:4px}
+
+/* ═══════════════════════════════
+   SIDEBAR
+═══════════════════════════════ */
+.sidebar{
+  width:var(--sidebar-w);min-width:var(--sidebar-w);
+  background:var(--sidebar-bg);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  height:100vh;overflow-y:auto;overflow-x:hidden;
+  padding:0 0 16px;
+}
+
+/* Logo */
+.logo{
+  display:flex;align-items:center;gap:9px;
+  padding:18px 16px 14px;
+  border-bottom:1px solid var(--border);
+  margin-bottom:16px;
+}
+.logo-icon{
+  width:30px;height:30px;border-radius:8px;
+  background:linear-gradient(135deg,#3b6fd4,#7c3aed);
+  display:flex;align-items:center;justify-content:center;font-size:15px;
+}
+.logo-name{font-weight:700;font-size:14px;letter-spacing:-0.2px}
+.logo-badge{
+  font-size:9px;font-weight:600;letter-spacing:.8px;
+  background:rgba(79,142,247,.15);color:var(--blue);
+  border:1px solid rgba(79,142,247,.3);border-radius:4px;
+  padding:2px 6px;text-transform:uppercase;
+}
+
+/* Input area */
+.sb-section{padding:0 12px;margin-bottom:16px}
+.sb-label{
+  font-size:10px;font-weight:600;letter-spacing:.7px;
+  text-transform:uppercase;color:var(--text-dim);
+  margin-bottom:8px;display:flex;align-items:center;gap:5px;
+}
+.sb-label-dot{width:5px;height:5px;border-radius:50%;background:var(--blue)}
+
+#topic-input{
+  width:100%;background:rgba(255,255,255,0.04);
+  border:1px solid var(--border);border-radius:var(--radius-sm);
+  color:var(--text);font-size:12px;font-family:inherit;
+  padding:9px 10px;resize:none;min-height:80px;outline:none;
+  transition:border-color .2s;line-height:1.5;
+}
+#topic-input::placeholder{color:var(--text-dim)}
+#topic-input:focus{border-color:rgba(79,142,247,.5)}
+
+#run-btn{
+  width:100%;margin-top:8px;
+  background:linear-gradient(135deg,#3b6fd4,#7c3aed);
+  border:none;border-radius:var(--radius-sm);
+  color:#fff;font-size:12px;font-weight:600;font-family:inherit;
+  padding:10px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  transition:opacity .2s,transform .15s;
+  box-shadow:0 4px 14px rgba(59,111,212,.3);
+}
+#run-btn:hover:not(:disabled){opacity:.88;transform:translateY(-1px)}
+#run-btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+
+/* Pipeline stages */
+.stage-list{display:flex;flex-direction:column;gap:0;position:relative}
+.stage-item{
+  display:flex;align-items:flex-start;gap:10px;
+  padding:9px 12px;position:relative;cursor:default;
+  transition:background .15s;border-radius:var(--radius-sm);margin:0 4px;
+}
+.stage-item:hover{background:rgba(255,255,255,.03)}
+
+/* vertical line connecting dots */
+.stage-item:not(:last-child)::after{
+  content:'';position:absolute;
+  left:calc(12px + 10px);top:calc(9px + 18px);
+  width:1px;height:calc(100% - 9px);
+  background:var(--border);
+}
+
+.stage-dot{
+  width:18px;height:18px;border-radius:50%;
+  border:2px solid var(--border-mid);
+  background:var(--card);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:9px;margin-top:1px;
+  transition:all .3s;
+}
+.stage-dot.active{border-color:var(--blue);background:rgba(79,142,247,.15);animation:dotPulse 1.2s ease-in-out infinite}
+.stage-dot.done{border-color:var(--green);background:rgba(34,197,94,.15)}
+@keyframes dotPulse{0%,100%{box-shadow:0 0 0 0 rgba(79,142,247,.4)}50%{box-shadow:0 0 0 5px rgba(79,142,247,0)}}
+
+.stage-info{flex:1}
+.stage-name{font-size:12px;font-weight:500;color:var(--text-mid);line-height:1.2}
+.stage-item.active .stage-name{color:var(--text)}
+.stage-item.done .stage-name{color:var(--green)}
+.stage-badge{
+  font-size:9px;font-weight:600;letter-spacing:.5px;
+  color:var(--text-dim);background:rgba(255,255,255,.05);
+  border:1px solid var(--border);border-radius:3px;padding:1px 5px;
+  margin-top:2px;display:inline-block;
+}
+.stage-timing{font-size:10px;color:var(--teal);margin-top:1px}
+
+/* Recent searches */
+.history-item{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 12px;margin:0 4px;border-radius:var(--radius-sm);
+  cursor:pointer;transition:background .15s;
+}
+.history-item:hover{background:rgba(79,142,247,.08)}
+.h-dot{width:6px;height:6px;border-radius:50%;background:var(--blue-dim);flex-shrink:0}
+.h-text{flex:1;overflow:hidden}
+.h-topic{font-size:11px;color:var(--text-mid);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.h-time{font-size:10px;color:var(--text-dim)}
+.history-empty{font-size:11px;color:var(--text-dim);font-style:italic;padding:4px 12px}
+
+/* Stats */
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:0 12px;margin-bottom:4px}
+.stat-box{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px}
+.stat-val{font-size:22px;font-weight:700;color:var(--blue);line-height:1}
+.stat-lbl{font-size:10px;color:var(--text-dim);margin-top:3px}
+.stat-box-wide{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:10px 12px;margin:6px 12px 0;
+}
+
+/* ═══════════════════════════════
+   MAIN
+═══════════════════════════════ */
+.main{flex:1;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+/* Topbar */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 24px;border-bottom:1px solid var(--border);
+  background:var(--sidebar-bg);flex-shrink:0;
+}
+.tabs{display:flex;gap:4px}
+.tab{
+  padding:6px 14px;border-radius:var(--radius-sm);font-size:12px;font-weight:500;
+  cursor:pointer;color:var(--text-dim);border:none;background:transparent;font-family:inherit;
+  display:flex;align-items:center;gap:6px;transition:all .2s;
+}
+.tab:hover{color:var(--text);background:rgba(255,255,255,.04)}
+.tab.active{color:var(--text);background:rgba(79,142,247,.1);border-bottom:2px solid var(--blue)}
+.tab-icon{font-size:13px}
+.status-pill{
+  display:flex;align-items:center;gap:6px;
+  font-size:11px;font-weight:500;color:var(--text-mid);
+}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--green)}
+.status-dot.busy{background:var(--amber);animation:dotPulse 1s ease-in-out infinite}
+.status-dot.error{background:var(--red)}
+
+/* Content area */
+.content{flex:1;overflow-y:auto;padding:24px}
+
+/* Empty state */
+.empty-state{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  height:100%;gap:16px;color:var(--text-dim);
+}
+.empty-icon{
+  width:72px;height:72px;border-radius:20px;
+  background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.15);
+  display:flex;align-items:center;justify-content:center;font-size:30px;
+}
+.empty-title{font-size:15px;font-weight:600;color:var(--text-mid)}
+.empty-sub{font-size:12px;text-align:center;max-width:260px;line-height:1.6}
+
+/* Progress bar */
+.progress-bar{
+  display:none;height:2px;background:var(--border);position:relative;overflow:hidden;flex-shrink:0;
+}
+.progress-bar.visible{display:block}
+.progress-fill{
+  height:100%;
+  background:linear-gradient(90deg,var(--blue),var(--purple),var(--teal));
+  background-size:200% 100%;
+  animation:progressSlide 1.5s linear infinite;
+  transition:width .5s ease;width:0%;
+}
+@keyframes progressSlide{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ── Pipeline Output Tab ── */
+.pipeline-output{display:flex;flex-direction:column;gap:16px}
+
+.agent-card{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  overflow:hidden;opacity:0;transform:translateY(12px);
+  transition:opacity .4s ease,transform .4s ease,border-color .2s;
+}
+.agent-card.in{opacity:1;transform:translateY(0)}
+.agent-card:hover{border-color:var(--border-mid)}
+
+.ac-header{
+  display:flex;align-items:center;gap:12px;
+  padding:14px 18px;border-bottom:1px solid var(--border);
+  background:rgba(255,255,255,.02);
+}
+.ac-icon{
+  width:34px;height:34px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;
+}
+.ic-search{background:rgba(79,142,247,.15)}
+.ic-reader{background:rgba(45,212,191,.15)}
+.ic-writer{background:rgba(168,85,247,.15)}
+.ic-critic{background:rgba(245,158,11,.15)}
+
+.ac-meta{flex:1}
+.ac-title{font-size:13px;font-weight:600;color:var(--text)}
+.ac-sub{font-size:11px;color:var(--text-dim);margin-top:1px}
+.ac-badge{
+  font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;
+  background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.25);
+  white-space:nowrap;
+}
+.ac-badge.running{
+  background:rgba(79,142,247,.1);color:var(--blue);border-color:rgba(79,142,247,.3);
+  animation:badgePulse 1.2s ease-in-out infinite;
+}
+@keyframes badgePulse{0%,100%{opacity:1}50%{opacity:.5}}
+
+.ac-body{padding:14px 18px;display:flex;flex-direction:column;gap:12px}
+
+.ac-chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{
+  display:flex;align-items:center;gap:5px;
+  background:rgba(255,255,255,.04);border:1px solid var(--border);
+  border-radius:5px;padding:3px 9px;font-size:11px;color:var(--text-mid);
+}
+
+.ac-scroll{
+  background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.05);
+  border-radius:var(--radius-sm);padding:12px 14px;
+  max-height:200px;overflow-y:auto;
+  font-size:12px;color:var(--text-mid);line-height:1.7;
+  white-space:pre-wrap;word-break:break-word;
+}
+
+.source-list{display:flex;flex-direction:column;gap:6px}
+.src-row{display:flex;gap:8px;align-items:flex-start;font-size:11px}
+.src-num{color:var(--blue);font-weight:700;flex-shrink:0;width:18px}
+.src-body{flex:1}
+.src-title{color:var(--text);font-weight:500;margin-bottom:1px}
+.src-url a{color:var(--blue);text-decoration:none;word-break:break-all}
+.src-url a:hover{text-decoration:underline}
+
+/* Critic layout */
+.critic-wrap{display:flex;gap:16px;flex-wrap:wrap}
+.score-ring{
+  width:64px;height:64px;border-radius:50%;flex-shrink:0;
+  border:3px solid var(--amber);display:flex;align-items:center;
+  justify-content:center;flex-direction:column;
+}
+.score-num{font-size:20px;font-weight:800;color:var(--amber);line-height:1}
+.score-lbl{font-size:8px;color:var(--text-dim);letter-spacing:.5px}
+.critic-sections{flex:1;display:flex;flex-direction:column;gap:8px}
+.critic-section-title{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+.critic-tags{display:flex;flex-wrap:wrap;gap:4px}
+.ctag{
+  font-size:10px;padding:2px 8px;border-radius:4px;
+  background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--text-mid);
+}
+
+/* ── Final Report Tab ── */
+.report-wrap{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  overflow:hidden;
+}
+.report-toolbar{
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;
+  padding:14px 18px;border-bottom:1px solid var(--border);
+  background:rgba(255,255,255,.02);
+}
+.report-toolbar-title{font-size:13px;font-weight:600;color:var(--text)}
+.report-actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{
+  display:flex;align-items:center;gap:5px;padding:7px 13px;
+  border-radius:var(--radius-sm);font-size:12px;font-weight:600;
+  cursor:pointer;border:none;font-family:inherit;transition:all .18s;
+}
+.btn-primary{background:linear-gradient(135deg,#3b6fd4,#7c3aed);color:#fff;box-shadow:0 3px 10px rgba(59,111,212,.3)}
+.btn-primary:hover{opacity:.87;transform:translateY(-1px)}
+.btn-primary:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.btn-ghost{background:rgba(255,255,255,.05);color:var(--text-mid);border:1px solid var(--border)}
+.btn-ghost:hover{background:rgba(255,255,255,.09);color:var(--text)}
+.btn-danger{background:rgba(239,68,68,.08);color:var(--red);border:1px solid rgba(239,68,68,.25)}
+.btn-danger:hover{background:rgba(239,68,68,.15)}
+
+.report-body-wrap{padding:24px 28px;max-height:calc(100vh - 220px);overflow-y:auto}
+.report-body{color:var(--text);line-height:1.8;font-size:13px}
+.report-body h1,.report-body h2{font-size:16px;font-weight:700;color:var(--blue);margin:20px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.report-body h3{font-size:13px;font-weight:700;color:var(--text);margin:16px 0 6px}
+.report-body p{margin-bottom:10px}
+.report-body ul,.report-body ol{padding-left:18px;margin-bottom:10px}
+.report-body li{margin-bottom:4px}
+.report-body strong{color:var(--text);font-weight:700}
+.report-body a{color:var(--blue);text-decoration:none}
+.report-body a:hover{text-decoration:underline}
+.report-body hr{border:none;border-top:1px solid var(--border);margin:16px 0}
+.report-body code{background:rgba(255,255,255,.06);padding:2px 5px;border-radius:3px;font-size:11px}
+
+/* ── Critic Review Tab ── */
+.critic-review-wrap{display:flex;flex-direction:column;gap:14px}
+
+.cr-score-card{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:20px 24px;display:flex;align-items:center;gap:20px;
+}
+.cr-score-big{
+  width:80px;height:80px;border-radius:50%;flex-shrink:0;
+  border:3px solid var(--amber);display:flex;align-items:center;justify-content:center;flex-direction:column;
+}
+.cr-score-num{font-size:28px;font-weight:800;color:var(--amber);line-height:1}
+.cr-score-sub{font-size:10px;color:var(--text-dim)}
+.cr-score-info{flex:1}
+.cr-score-title{font-size:15px;font-weight:700;margin-bottom:4px}
+.cr-score-desc{font-size:12px;color:var(--text-mid);line-height:1.5}
+
+.cr-section-card{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;
+}
+.cr-section-header{
+  padding:12px 18px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;
+  background:rgba(255,255,255,.02);
+}
+.cr-section-body{padding:14px 18px;display:flex;flex-direction:column;gap:8px}
+.cr-item{
+  display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--text-mid);line-height:1.5;
+}
+.cr-bullet{flex-shrink:0;margin-top:2px;font-size:13px}
+
+/* ── Error card ── */
+.error-card{
+  background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.25);
+  border-radius:var(--radius);padding:16px 20px;
+  display:flex;align-items:flex-start;gap:12px;
+  animation:fadeIn .3s ease;
+}
+.error-icon{font-size:20px;flex-shrink:0}
+.error-title{font-size:13px;font-weight:700;color:var(--red);margin-bottom:3px}
+.error-msg{font-size:12px;color:var(--text-mid);line-height:1.5}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── Skeleton ── */
+.skel{
+  background:linear-gradient(90deg,rgba(255,255,255,.04) 25%,rgba(255,255,255,.08) 50%,rgba(255,255,255,.04) 75%);
+  background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:3px;
+}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ── Toast ── */
+.toast{
+  position:fixed;bottom:20px;right:20px;z-index:999;
+  background:rgba(14,21,37,.95);border:1px solid var(--border-mid);
+  border-radius:var(--radius-sm);padding:10px 16px;font-size:12px;
+  backdrop-filter:blur(16px);box-shadow:0 8px 24px rgba(0,0,0,.5);
+  opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none;
+}
+.toast.show{opacity:1;transform:translateY(0)}
+
+/* ── Responsive ── */
+@media(max-width:700px){
+  .sidebar{display:none}
+  .content{padding:16px}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════ SIDEBAR ══════════════ -->
+<aside class="sidebar">
+
+  <!-- Logo -->
+  <div class="logo">
+    <div class="logo-icon">🔭</div>
+    <span class="logo-name">INQUIRA AI</span>
+    <span class="logo-badge">Research</span>
+  </div>
+
+  <!-- Topic input -->
+  <div class="sb-section">
+    <div class="sb-label"><span class="sb-label-dot"></span>Research Topic</div>
+    <textarea id="topic-input" placeholder="e.g. Latest advances in quantum computing 2024..." rows="4"></textarea>
+    <button id="run-btn">▶ Run Research Pipeline</button>
+  </div>
+
+  <!-- Pipeline stages -->
+  <div class="sb-section">
+    <div class="sb-label"><span class="sb-label-dot"></span>Pipeline Stages</div>
+    <div class="stage-list">
+      <div class="stage-item" id="si-search">
+        <div class="stage-dot" id="sd-search"></div>
+        <div class="stage-info">
+          <div class="stage-name">Search Agent</div>
+          <span class="stage-badge">STEP 1</span>
+          <div class="stage-timing" id="st-search"></div>
+        </div>
+      </div>
+      <div class="stage-item" id="si-reader">
+        <div class="stage-dot" id="sd-reader"></div>
+        <div class="stage-info">
+          <div class="stage-name">Reader Agent</div>
+          <span class="stage-badge">STEP 2</span>
+          <div class="stage-timing" id="st-reader"></div>
+        </div>
+      </div>
+      <div class="stage-item" id="si-writer">
+        <div class="stage-dot" id="sd-writer"></div>
+        <div class="stage-info">
+          <div class="stage-name">Writer Chain</div>
+          <span class="stage-badge">STEP 3</span>
+          <div class="stage-timing" id="st-writer"></div>
+        </div>
+      </div>
+      <div class="stage-item" id="si-critic">
+        <div class="stage-dot" id="sd-critic"></div>
+        <div class="stage-info">
+          <div class="stage-name">Critic Chain</div>
+          <span class="stage-badge">STEP 4</span>
+          <div class="stage-timing" id="st-critic"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent searches -->
+  <div class="sb-section">
+    <div class="sb-label"><span class="sb-label-dot"></span>Recent Searches</div>
+    <div id="history-list"><div class="history-empty">No searches yet.</div></div>
+  </div>
+
+  <!-- Session stats -->
+  <div class="sb-section">
+    <div class="sb-label"><span class="sb-label-dot"></span>Session Stats</div>
+    <div class="stats-grid">
+      <div class="stat-box">
+        <div class="stat-val" id="stat-runs">0</div>
+        <div class="stat-lbl">Total Runs</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" id="stat-reports">0</div>
+        <div class="stat-lbl">Reports</div>
+      </div>
+    </div>
+    <div class="stat-box-wide">
+      <div class="stat-val" style="font-size:14px;color:var(--text-mid)" id="stat-duration">—</div>
+      <div class="stat-lbl">Last Run Duration</div>
+    </div>
+  </div>
+
+</aside>
+
+<!-- ══════════════ MAIN ══════════════ -->
+<div class="main">
+
+  <!-- Topbar with tabs -->
+  <div class="topbar">
+    <div class="tabs">
+      <button class="tab active" data-tab="pipeline">
+        <span class="tab-icon">⚡</span>Pipeline Output
+      </button>
+      <button class="tab" data-tab="report">
+        <span class="tab-icon">📄</span>Final Report
+      </button>
+      <button class="tab" data-tab="critic">
+        <span class="tab-icon">🎯</span>Critic Review
+      </button>
+    </div>
+    <div class="status-pill">
+      <div class="status-dot" id="status-dot"></div>
+      <span id="status-text">Ready</span>
+    </div>
+  </div>
+
+  <!-- Progress bar -->
+  <div class="progress-bar" id="progress-bar">
+    <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+  </div>
+
+  <!-- Tab content -->
+  <div class="content" id="content-pipeline">
+    <div class="empty-state" id="empty-state">
+      <div class="empty-icon">⚡</div>
+      <div class="empty-title">Ready to Research</div>
+      <div class="empty-sub">Type a topic in the sidebar and hit Run to activate the multi-agent pipeline.</div>
+    </div>
+    <div id="pipeline-cards" style="display:none" class="pipeline-output"></div>
+    <div id="error-box"></div>
+  </div>
+
+  <div class="content" id="content-report" style="display:none">
+    <div class="empty-state" id="report-empty">
+      <div class="empty-icon">📄</div>
+      <div class="empty-title">No Report Yet</div>
+      <div class="empty-sub">Run the pipeline first to generate your research report.</div>
+    </div>
+    <div class="report-wrap" id="report-wrap" style="display:none">
+      <div class="report-toolbar">
+        <div class="report-toolbar-title">📄 Research Report</div>
+        <div class="report-actions">
+          <button class="btn btn-ghost" id="btn-copy">📋 Copy</button>
+          <button class="btn btn-primary" id="btn-pdf">⬇ Download PDF</button>
+          <button class="btn btn-danger" id="btn-clear">✕ Clear</button>
+        </div>
+      </div>
+      <div class="report-body-wrap">
+        <div class="report-body" id="report-body"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content" id="content-critic" style="display:none">
+    <div class="empty-state" id="critic-empty">
+      <div class="empty-icon">🎯</div>
+      <div class="empty-title">No Review Yet</div>
+      <div class="empty-sub">Run the pipeline to get an AI quality review of your report.</div>
+    </div>
+    <div id="critic-review" style="display:none" class="critic-review-wrap"></div>
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ══════════════════════════════════════════════
+   CONFIG — change this to your deployed backend
+══════════════════════════════════════════════ */
+const API_BASE = window.ENV_API_BASE_URL || "http://localhost:8000";
+
+/* ══════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════ */
+let currentResult = null;
+let totalRuns = 0;
+let totalReports = 0;
+const HISTORY_KEY = "inquira_v2_history";
+
+/* ══════════════════════════════════════════════
+   DOM
+══════════════════════════════════════════════ */
+const $ = id => document.getElementById(id);
+const topicInput   = $("topic-input");
+const runBtn       = $("run-btn");
+const progressBar  = $("progress-bar");
+const progressFill = $("progress-fill");
+const statusDot    = $("status-dot");
+const statusText   = $("status-text");
+const historyList  = $("history-list");
+const toast        = $("toast");
+
+/* ══════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════ */
+document.addEventListener("DOMContentLoaded", () => {
+  renderHistory();
+
+  // Tabs
+  document.querySelectorAll(".tab").forEach(tab => {
+    tab.addEventListener("click", () => switchTab(tab.dataset.tab));
+  });
+
+  runBtn.addEventListener("click", handleRun);
+  topicInput.addEventListener("keydown", e => {
+    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleRun();
+  });
+
+  $("btn-copy").addEventListener("click", handleCopy);
+  $("btn-pdf").addEventListener("click", handlePDF);
+  $("btn-clear").addEventListener("click", handleClear);
+});
+
+/* ══════════════════════════════════════════════
+   TABS
+══════════════════════════════════════════════ */
+function switchTab(name) {
+  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === name));
+  ["pipeline","report","critic"].forEach(n => {
+    $(`content-${n}`).style.display = n === name ? "block" : "none";
+  });
+}
+
+/* ══════════════════════════════════════════════
+   MAIN RUN
+══════════════════════════════════════════════ */
+async function handleRun() {
+  const topic = topicInput.value.trim();
+  if (!topic) { showToast("Please enter a research topic."); return; }
+
+  resetUI();
+  setStatus("busy", "Running pipeline…");
+  setBusy(true);
+  startProgress();
+
+  // Optimistic stage highlights
+  const timers = [
+    setTimeout(() => setStage("search","active"), 300),
+    setTimeout(() => setStage("reader","active"), 7000),
+    setTimeout(() => setStage("writer","active"), 18000),
+    setTimeout(() => setStage("critic","active"), 30000),
+  ];
+
+  const t0 = Date.now();
+
+  try {
+    const res = await fetch(`${API_BASE}/research`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ topic }),
+      signal: AbortSignal.timeout(200_000),
+    });
+
+    timers.forEach(clearTimeout);
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Server error ${res.status}`);
+    }
+
+    currentResult = await res.json();
+    const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+
+    stopProgress();
+    setStatus("ready", "Complete");
+    markAllDone(currentResult.timings || {});
+
+    renderPipelineCards(currentResult);
+    renderReport(currentResult);
+    renderCriticReview(currentResult.feedback);
+
+    totalRuns++;
+    totalReports++;
+    $("stat-runs").textContent = totalRuns;
+    $("stat-reports").textContent = totalReports;
+    $("stat-duration").textContent = `${elapsed}s`;
+
+    addHistory(topic);
+    showToast("Research complete ✓");
+
+  } catch (err) {
+    timers.forEach(clearTimeout);
+    stopProgress();
+    setStatus("error", "Failed");
+    showError(err.name === "TimeoutError"
+      ? "Request timed out after 3 minutes. Try again."
+      : err.message || "Something went wrong.");
+  } finally {
+    setBusy(false);
+  }
+}
+
+/* ══════════════════════════════════════════════
+   PIPELINE CARDS
+══════════════════════════════════════════════ */
+function renderPipelineCards(r) {
+  $("empty-state").style.display = "none";
+  const wrap = $("pipeline-cards");
+  wrap.innerHTML = "";
+  wrap.style.display = "flex";
+
+  // Card 1 – Search Agent
+  const c1 = makeCard("ic-search","🔍","Search Agent","Tavily web search",r.timings?.search);
+  const chips1 = makeChips([
+    ["🔗", `${r.sources?.length || 0} sources indexed`],
+    ["⏱", `${r.timings?.search || "—"}s`],
+  ]);
+  const src = makeSources(r.sources || []);
+  const scroll1 = makeScroll(r.search_results || "No results.");
+  c1.querySelector(".ac-body").append(chips1, src, scroll1);
+  wrap.appendChild(c1);
+
+  // Card 2 – Reader Agent
+  const c2 = makeCard("ic-reader","📖","Reader Agent","BeautifulSoup scraper",r.timings?.reader);
+  const chips2 = makeChips([["⏱", `${r.timings?.reader || "—"}s`]]);
+  const scroll2 = makeScroll(r.scraped_content || "No content scraped.");
+  c2.querySelector(".ac-body").append(chips2, scroll2);
+  wrap.appendChild(c2);
+
+  // Card 3 – Writer Chain
+  const c3 = makeCard("ic-writer","✍️","Writer Chain","Mistral AI report",r.timings?.writer);
+  const chips3 = makeChips([["⏱", `${r.timings?.writer || "—"}s`]]);
+  const scroll3 = makeScroll(r.report || "No report.");
+  c3.querySelector(".ac-body").append(chips3, scroll3);
+  wrap.appendChild(c3);
+
+  // Card 4 – Critic Chain
+  const c4 = makeCard("ic-critic","🎯","Critic Chain","Quality scoring",r.timings?.critic);
+  const chips4 = makeChips([["⏱", `${r.timings?.critic || "—"}s`]]);
+  c4.querySelector(".ac-body").append(chips4, makeCriticMini(r.feedback));
+  wrap.appendChild(c4);
+
+  // Animate
+  requestAnimationFrame(() => {
+    wrap.querySelectorAll(".agent-card").forEach((c,i) =>
+      setTimeout(() => c.classList.add("in"), i * 100));
+  });
+}
+
+function makeCard(iconCls, icon, title, sub, timing) {
+  const d = document.createElement("div");
+  d.className = "agent-card";
+  d.innerHTML = `
+    <div class="ac-header">
+      <div class="ac-icon ${iconCls}">${icon}</div>
+      <div class="ac-meta">
+        <div class="ac-title">${title}</div>
+        <div class="ac-sub">${sub}</div>
+      </div>
+      <div class="ac-badge">Complete${timing ? ` · ${timing}s` : ""}</div>
+    </div>
+    <div class="ac-body"></div>`;
+  return d;
+}
+
+function makeChips(pairs) {
+  const d = document.createElement("div");
+  d.className = "ac-chips";
+  pairs.forEach(([icon, label]) => {
+    const c = document.createElement("div");
+    c.className = "chip";
+    c.innerHTML = `<span>${icon}</span>${esc(label)}`;
+    d.appendChild(c);
+  });
+  return d;
+}
+
+function makeScroll(text) {
+  const d = document.createElement("div");
+  d.className = "ac-scroll";
+  d.textContent = text;
+  return d;
+}
+
+function makeSources(sources) {
+  if (!sources.length) return document.createTextNode("");
+  const wrap = document.createElement("div");
+  wrap.className = "source-list";
+  sources.slice(0,6).forEach((s,i) => {
+    wrap.innerHTML += `
+      <div class="src-row">
+        <span class="src-num">[${i+1}]</span>
+        <div class="src-body">
+          <div class="src-title">${esc(s.title)}</div>
+          <div class="src-url"><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.url)}</a></div>
+        </div>
+      </div>`;
+  });
+  return wrap;
+}
+
+function makeCriticMini(fb) {
+  if (!fb || typeof fb !== "object") {
+    const d = document.createElement("div");
+    d.className = "ac-scroll";
+    d.textContent = String(fb || "No feedback.");
+    return d;
+  }
+  const d = document.createElement("div");
+  d.className = "critic-wrap";
+  d.innerHTML = `
+    <div class="score-ring">
+      <div class="score-num">${fb.score ?? "?"}</div>
+      <div class="score-lbl">/ 10</div>
+    </div>
+    <div class="critic-sections">
+      ${criticSection("💪 Strengths", fb.strengths, "#22c55e")}
+      ${criticSection("⚠ Weaknesses", fb.weaknesses, "#ef4444")}
+      ${criticSection("💡 Suggestions", fb.suggestions, "#f59e0b")}
+    </div>`;
+  return d;
+}
+
+function criticSection(label, items, color) {
+  if (!items?.length) return "";
+  return `
+    <div>
+      <div class="critic-section-title" style="color:${color}">${label}</div>
+      <div class="critic-tags">${items.map(i => `<span class="ctag">${esc(i)}</span>`).join("")}</div>
+    </div>`;
+}
+
+/* ══════════════════════════════════════════════
+   FINAL REPORT TAB
+══════════════════════════════════════════════ */
+function renderReport(r) {
+  $("report-empty").style.display = "none";
+  $("report-wrap").style.display = "block";
+  $("report-body").innerHTML = md(r.report || "No report generated.");
+}
+
+/* ══════════════════════════════════════════════
+   CRITIC REVIEW TAB
+══════════════════════════════════════════════ */
+function renderCriticReview(fb) {
+  $("critic-empty").style.display = "none";
+  const wrap = $("critic-review");
+  wrap.style.display = "flex";
+  wrap.innerHTML = "";
+
+  if (!fb || typeof fb !== "object") {
+    wrap.innerHTML = `<div class="ac-scroll">${esc(String(fb || "No feedback."))}</div>`;
+    return;
+  }
+
+  const score = fb.score ?? "?";
+  const scoreDesc = score >= 8 ? "Excellent report quality"
+    : score >= 6 ? "Good report with minor gaps"
+    : score >= 4 ? "Acceptable, needs improvement"
+    : "Needs significant revision";
+
+  wrap.innerHTML = `
+    <div class="cr-score-card">
+      <div class="cr-score-big">
+        <div class="cr-score-num">${score}</div>
+        <div class="cr-score-sub">out of 10</div>
+      </div>
+      <div class="cr-score-info">
+        <div class="cr-score-title">Quality Score</div>
+        <div class="cr-score-desc">${scoreDesc}</div>
+      </div>
+    </div>
+    ${crSection("💪 Strengths", fb.strengths, "#22c55e", "green")}
+    ${crSection("⚠ Weaknesses", fb.weaknesses, "#ef4444", "red")}
+    ${crSection("💡 Suggestions for Improvement", fb.suggestions, "#f59e0b", "amber")}
+  `;
+}
+
+function crSection(title, items, color, key) {
+  if (!items?.length) return "";
+  const bullets = items.map(i =>
+    `<div class="cr-item"><span class="cr-bullet" style="color:${color}">•</span>${esc(i)}</div>`
+  ).join("");
+  return `
+    <div class="cr-section-card">
+      <div class="cr-section-header" style="color:${color}">${title}</div>
+      <div class="cr-section-body">${bullets}</div>
+    </div>`;
+}
+
+/* ══════════════════════════════════════════════
+   PDF DOWNLOAD
+══════════════════════════════════════════════ */
+async function handlePDF() {
+  if (!currentResult) return;
+  $("btn-pdf").disabled = true;
+  $("btn-pdf").textContent = "⏳ Generating…";
+  try {
+    const res = await fetch(`${API_BASE}/download-pdf`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        topic: currentResult.topic,
+        report: currentResult.report,
+        sources: currentResult.sources || [],
+      }),
+    });
+    if (!res.ok) throw new Error("PDF generation failed.");
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Inquira_${(currentResult.topic||"Report").slice(0,40).replace(/\s+/g,"_")}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast("PDF downloaded 📄");
+  } catch (e) { showError(e.message); }
+  finally {
+    $("btn-pdf").disabled = false;
+    $("btn-pdf").innerHTML = "⬇ Download PDF";
+  }
+}
+
+function handleCopy() {
+  if (!currentResult?.report) return;
+  navigator.clipboard.writeText(currentResult.report)
+    .then(() => showToast("Copied to clipboard!"))
+    .catch(() => showToast("Copy failed."));
+}
+
+function handleClear() {
+  currentResult = null;
+  resetUI();
+  topicInput.value = "";
+  showToast("Cleared.");
+}
+
+/* ══════════════════════════════════════════════
+   STAGE INDICATORS
+══════════════════════════════════════════════ */
+function setStage(name, state) {
+  const dot = $(`sd-${name}`);
+  const item = $(`si-${name}`);
+  if (!dot) return;
+  dot.className = `stage-dot ${state}`;
+  item.className = `stage-item ${state}`;
+}
+
+function markAllDone(timings) {
+  ["search","reader","writer","critic"].forEach(s => {
+    setStage(s, "done");
+    if (timings[s]) $(`st-${s}`).textContent = `${timings[s]}s`;
+  });
+}
+
+/* ══════════════════════════════════════════════
+   PROGRESS
+══════════════════════════════════════════════ */
+function startProgress() {
+  progressBar.classList.add("visible");
+  progressFill.style.width = "5%";
+  // Slow creep
+  let p = 5;
+  progressFill._interval = setInterval(() => {
+    if (p < 88) { p += 0.25; progressFill.style.width = `${p}%`; }
+  }, 600);
+}
+
+function stopProgress() {
+  clearInterval(progressFill._interval);
+  progressFill.style.width = "100%";
+  setTimeout(() => {
+    progressBar.classList.remove("visible");
+    progressFill.style.width = "0%";
+  }, 800);
+}
+
+/* ══════════════════════════════════════════════
+   STATUS
+══════════════════════════════════════════════ */
+function setStatus(state, text) {
+  statusDot.className = "status-dot" + (state === "busy" ? " busy" : state === "error" ? " error" : "");
+  statusText.textContent = text;
+}
+
+/* ══════════════════════════════════════════════
+   HISTORY
+══════════════════════════════════════════════ */
+function getHistory() {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; }
+  catch { return []; }
+}
+
+function addHistory(topic) {
+  let h = getHistory().filter(x => x.topic !== topic);
+  h.unshift({ topic, time: new Date().toLocaleString("en-GB", {day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}) });
+  if (h.length > 10) h = h.slice(0,10);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(h));
+  renderHistory();
+}
+
+function renderHistory() {
+  const h = getHistory();
+  if (!h.length) {
+    historyList.innerHTML = '<div class="history-empty">No searches yet.</div>';
+    return;
+  }
+  historyList.innerHTML = h.map(x => `
+    <div class="history-item" onclick="rerun(${JSON.stringify(x.topic)})">
+      <div class="h-dot"></div>
+      <div class="h-text">
+        <div class="h-topic">${esc(x.topic)}</div>
+        <div class="h-time">${esc(x.time)}</div>
+      </div>
+    </div>`).join("");
+}
+
+function rerun(topic) {
+  topicInput.value = topic;
+  handleRun();
+}
+
+/* ══════════════════════════════════════════════
+   HELPERS
+══════════════════════════════════════════════ */
+function setBusy(on) { runBtn.disabled = on; runBtn.textContent = on ? "⏳ Running…" : "▶ Run Research Pipeline"; }
+
+function resetUI() {
+  $("empty-state").style.display = "flex";
+  $("pipeline-cards").style.display = "none";
+  $("pipeline-cards").innerHTML = "";
+  $("error-box").innerHTML = "";
+  $("report-empty").style.display = "flex";
+  $("report-wrap").style.display = "none";
+  $("report-body").innerHTML = "";
+  $("critic-empty").style.display = "flex";
+  $("critic-review").style.display = "none";
+  $("critic-review").innerHTML = "";
+  ["search","reader","writer","critic"].forEach(s => {
+    setStage(s,"");
+    $(`st-${s}`).textContent = "";
+  });
+}
+
+function showError(msg) {
+  $("empty-state").style.display = "none";
+  $("error-box").innerHTML = `
+    <div class="error-card">
+      <div class="error-icon">⚠️</div>
+      <div>
+        <div class="error-title">Something went wrong</div>
+        <div class="error-msg">${esc(msg)}</div>
+      </div>
+    </div>`;
+}
+
+function showToast(msg) {
+  toast.textContent = msg;
+  toast.classList.add("show");
+  setTimeout(() => toast.classList.remove("show"), 3000);
+}
+
+function esc(s) {
+  return String(s ?? "")
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+/* Minimal markdown renderer */
+function md(text) {
+  if (!text) return "";
+  return text
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/^### (.+)$/gm,"<h3>$1</h3>")
+    .replace(/^## (.+)$/gm,"<h2>$1</h2>")
+    .replace(/^# (.+)$/gm,"<h1>$1</h1>")
+    .replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g,"<em>$1</em>")
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>')
+    .replace(/(?<![">])(https?:\/\/[^\s<,)\]]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>')
+    .replace(/^---$/gm,"<hr>")
+    .replace(/^[-*•] (.+)$/gm,"<li>$1</li>")
+    .replace(/(<li>[\s\S]*?<\/li>)/g,"<ul>$1</ul>")
+    .replace(/\n\n/g,"</p><p>")
+    .replace(/^(?!<[hHuUpP])(.+)$/gm,"$1<br>")
+    .replace(/^/,"<p>") + "</p>";
+}
+</script>
+</body>
+</html>
